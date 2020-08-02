@@ -66,18 +66,26 @@ class Chess(commands.Cog):
                 if res.status == 200:
                     data = await res.json()
                     game = data["challenge"]["id"]
+
+                    author_url = data["urlWhite"]
+                    opponent_url = data["urlBlack"]
+                    self.sessions[game] = [ctx.author, opponent]
+                    if random.random() < 0.5:
+                        self.sessions[game] = [opponent, ctx.author]
+                        opponent_url = data["urlWhite"]
+                        author_url = data["urlBlack"]
+
                     await ctx.author.send(
                         f"Your unique URL is in the next message, and will be deleted in {TIMEOUT} seconds."
                     )
-                    await ctx.author.send(data["urlWhite"], delete_after=TIMEOUT)
+                    await ctx.author.send(author_url, delete_after=TIMEOUT)
                     await opponent.send(
                         f"{ctx.message.jump_url}\nYou've been invited to play Chess! Your unique URL is in the next message, and will be deleted in {TIMEOUT} seconds."
                     )
-                    await opponent.send(data["urlBlack"], delete_after=TIMEOUT)
+                    await opponent.send(opponent_url, delete_after=TIMEOUT)
                     await ctx.send(
                         f"Confirming game with opponents, please wait. This invite will time out in {TIMEOUT} seconds."
                     )
-                    self.sessions[game] = [ctx.author, opponent]
                 else:
                     return await ctx.send("Failed to create.")
 
@@ -152,6 +160,7 @@ class Chess(commands.Cog):
                                     logging.warn(f"Data is malformed: {payload}")
                             if status:
                                 await ctx.send(f"`{game}`: {status}")
+                                raise RuntimeWarning("I could probably do better but this is an exit.")
                 except Exception:
                     while len(moves):
                         await asyncio.sleep(0)  # Finish the rest of the turns
