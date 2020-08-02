@@ -54,6 +54,8 @@ class Chess(commands.Cog):
             return await ctx.send("You're already playing a game!")
         elif opponent in players:
             return await ctx.send("The opponent is already playing a game!")
+        if match_duration % 60:
+            return await ctx.send("Duration must be a multiple of 60s.")
 
         game = None
 
@@ -88,6 +90,7 @@ class Chess(commands.Cog):
                         f"Confirming game with opponents, please wait. This invite will time out in {TIMEOUT} seconds."
                     )
                 else:
+                    logging.warning(f"Failed to create, status: {res.status}")
                     return await ctx.send("Failed to create.")
 
         logging.info(f"Created a new lichess game with ID: {game}")
@@ -198,12 +201,14 @@ class Chess(commands.Cog):
         logging.info("Draw task started.")
         try:
             msg = None
+            color = "White"
             while await sem.acquire():
                 d = moves.pop(0)
                 logging.info(f"Refreshing board: {d}")
                 board = chess.Board(d["fen"])
                 em = discord.Embed(
-                    description=f"```{str(board)}```\n[watch on lichess.org](https://lichess.org/{game})",
+                    title=f"ID: {game}",
+                    description=f"{color}'s turn!```{str(board)}```\n[watch on lichess.org](https://lichess.org/{game})",
                     timestamp=datetime.now(),
                 )
                 url = f"https://backscattering.de/web-boardimage/board.png?fen={d['fen']}&size={BOARD_SIZE}"
@@ -215,6 +220,10 @@ class Chess(commands.Cog):
                     name="Players",
                     value=f":white_large_square: {self.sessions[game][0].mention} ({d['clock'].get('white', '-')}s)\n:black_large_square: {self.sessions[game][1].mention} ({d['clock'].get('black', '-')}s)",
                 )
+                if color == "White":
+                    color = "Black"
+                else:
+                    color = "White"
                 if not msg:
                     msg = await ctx.send(content=None, embed=em)
                 else:
