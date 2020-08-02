@@ -12,13 +12,14 @@ import aiohttp
 import time
 from datetime import datetime
 
-HEARTBEAT_INTERVAL = 5
 TIMEOUT = 60
 TIMEOUT_CHECK_INTERVAL = 3
 DRAW_THROTTLE = 1
 BASE_BOARD_STATE = {"fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR", "uci": None}
 BOARD_SIZE = 120
 GAME_TIME = 240
+HEARTBEAT_INTERVAL = 5
+HEARTBEAT_FAIL_COUNT = GAME_TIME // HEARTBEAT_INTERVAL
 
 
 class Chess(commands.Cog):
@@ -105,26 +106,53 @@ class Chess(commands.Cog):
     async def game(self, ctx, game):
         sri = "".join(random.sample(ascii_letters, 10))
         shard = random.randint(1, 5)
-        async with websockets.connect(
-            f"wss://socket{shard}.lichess.org/watch/{game}/white/v5?sri={sri}v=100",
-            ssl=True,
-        ) as ws:
-            sem = asyncio.Semaphore(1)
-            moves = [BASE_BOARD_STATE]
-            ping = asyncio.create_task(self.ping(ws))
-            draws = asyncio.create_task(self.queue_draws(ctx, ws, sem, moves, game))
-            msg = None
-            async for ms in ws:
-                logging.info(f"Data from socket: {ms}")
-                if ms != "0" and json.loads(ms).get("t", None) == "end":
-                    status = json.loads(ms).get("d", None)
-                    if not status:
-                        status = "Draw!"
-                    if status == "white":
-                        status = f"{self.sessions[game][0].mention} won!"
-                    elif status == "black":
-                        status = f"{self.sessions[game][1].mention} won!"
-                    await ctx.send(f"`{game}`: {status}")
+        try:
+            async with websockets.connect(
+                f"wss://socket{shard}.lichess.org/watch/{game}/white/v5?sri={sri}v=100",
+                ssl=True,
+            ) as ws:
+                sem = asyncio.Semaphore(1)
+                moves = [BASE_BOARD_STATE]
+                signal = 9
+                ping = asyncio.create_task(self.ping(ws))
+                draws = asyncio.create_task(self.queue_draws(ctx, ws, sem, moves, game))
+                msg = None
+                try:
+                    async for ms in ws:
+                        logging.debug(f"Data from socket: {ms}")
+                        if ms == "0":
+                            signal += 1
+                            if signal >= HEARTBEAT_FAIL_COUNT:
+                                await ctx.send(f"`{game}`: cancelled due to inactivity.")
+                                raise RuntimeError("Heartbeat didn't receive any actions for too long.")
+                        else:
+                            signal = 0
+                            payload = json.loads(ms)
+                            status = None
+                            if payload.get("t", None) == "end":
+                                status = payload.get("d", None)
+                                if not status:
+                                    status = "Draw!"
+                                if status == "white":
+                                    status = f"{self.sessions[game][0].mention} won!"
+                                elif status == "black":
+                                    status = f"{self.sessions[game][1].mention} won!"
+                            elif payload.get("t", None) == "crowd":
+                                if all(
+                                    [not presence for presence in payload["d"].values()]
+                                ):
+                                    status = "Both players disconnected."
+                            else:
+                                if "d" in payload and "fen" in payload["d"]:
+                                    moves.append(payload["d"])
+                                    logging.info(f"Pushed move: {payload['d']}")
+                                    logging.info(f"Moves available: {len(moves)}")
+                                    sem.release()
+                                else:
+                                    logging.warn(f"Data is malformed: {payload}")
+                            if status:
+                                await ctx.send(f"`{game}`: {status}")
+                except Exception:
                     while len(moves):
                         await asyncio.sleep(0)  # Finish the rest of the turns
                     ping.cancel()
@@ -137,23 +165,17 @@ class Chess(commands.Cog):
                         await draws
                     except asyncio.CancelledError:
                         logging.info("Drawing task successfully cancelled.")
-                    return
-                if ms != "0":
-                    data = json.loads(ms)
-                    if "d" in data and "fen" in data["d"]:
-                        moves.append(data["d"])
-                        logging.info(f"Pushed move: {data['d']}")
-                        logging.info(f"Moves available: {len(moves)}")
-                        sem.release()
-                    else:
-                        logging.warn(f"Data is malformed: {data}")
+                    await ws.close()
+                    raise
+        except Exception as err:
+            logging.warn(err)
 
     async def ping(self, ws):
         logging.info("Ping task started.")
         try:
             while not ws.closed:
                 try:
-                    logging.info("Sending keepalive.")
+                    logging.debug("Sending keepalive.")
                     await ws.send(json.dumps({"t": "p", "l": 20}))
                     await asyncio.sleep(HEARTBEAT_INTERVAL)
                 except websockets.ConnectionClosedOK:
