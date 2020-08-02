@@ -18,6 +18,7 @@ DRAW_THROTTLE = 1
 BASE_BOARD_STATE = {"fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR", "uci": None}
 BOARD_SIZE = 120
 GAME_TIME = 240
+INCREMENT_TIME = 0
 HEARTBEAT_INTERVAL = 5
 HEARTBEAT_FAIL_COUNT = GAME_TIME // HEARTBEAT_INTERVAL
 
@@ -42,7 +43,7 @@ class Chess(commands.Cog):
 
     @commands.max_concurrency(4)
     @commands.command()
-    async def chess(self, ctx, opponent: discord.Member, match_duration: int = GAME_TIME):
+    async def chess(self, ctx, opponent: discord.Member, match_duration: int = GAME_TIME, increment: int = INCREMENT_TIME):
         """Initiate a new lichess game with an opponent. The initiator will always be white."""
         if ctx.author == opponent:
             return await ctx.send("You can't play with yourself.")
@@ -59,7 +60,7 @@ class Chess(commands.Cog):
         async with aiohttp.ClientSession() as s:
             form = aiohttp.FormData()
             form.add_field("clock.limit", match_duration)
-            form.add_field("clock.increment", 0)
+            form.add_field("clock.increment", increment)
             async with s.post(
                 "https://lichess.org/api/challenge/open", data=form
             ) as res:
