@@ -213,7 +213,7 @@ class Chess(commands.Cog):
                 em.set_footer(text="Powered by lichess.org")
                 em.add_field(
                     name="Players",
-                    value=f":white_large_square: {self.sessions[game][0].mention}\n:black_large_square: {self.sessions[game][1].mention}",
+                    value=f":white_large_square: {self.sessions[game][0].mention} ({d['clock']['white']}s)\n:black_large_square: {self.sessions[game][1].mention} ({d['clock']['black']}s)",
                 )
                 if not msg:
                     msg = await ctx.send(content=None, embed=em)
