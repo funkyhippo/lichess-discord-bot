@@ -42,7 +42,7 @@ class Chess(commands.Cog):
 
     @commands.max_concurrency(4)
     @commands.command()
-    async def chess(self, ctx, opponent: discord.Member):
+    async def chess(self, ctx, opponent: discord.Member, match_duration: int = GAME_TIME):
         """Initiate a new lichess game with an opponent. The initiator will always be white."""
         if ctx.author == opponent:
             return await ctx.send("You can't play with yourself.")
@@ -58,7 +58,7 @@ class Chess(commands.Cog):
 
         async with aiohttp.ClientSession() as s:
             form = aiohttp.FormData()
-            form.add_field("clock.limit", GAME_TIME)
+            form.add_field("clock.limit", match_duration)
             form.add_field("clock.increment", 0)
             async with s.post(
                 "https://lichess.org/api/challenge/open", data=form
@@ -127,7 +127,7 @@ class Chess(commands.Cog):
                 msg = None
                 try:
                     async for ms in ws:
-                        logging.debug(f"Data from socket: {ms}")
+                        logging.info(f"Data from socket: {ms}")
                         if ms == "0":
                             signal += 1
                             if signal >= HEARTBEAT_FAIL_COUNT:
@@ -145,11 +145,11 @@ class Chess(commands.Cog):
                                     status = f"{self.sessions[game][0].mention} won!"
                                 elif status == "black":
                                     status = f"{self.sessions[game][1].mention} won!"
-                            elif payload.get("t", None) == "crowd":
-                                if all(
-                                    [not presence for presence in payload["d"].values()]
-                                ):
-                                    status = "Both players disconnected."
+                            # elif payload.get("t", None) == "crowd":
+                            #     if all(
+                            #         [not presence for presence in payload["d"].values()]
+                            #     ):
+                            #         status = "Both players disconnected."
                             else:
                                 if "d" in payload and "fen" in payload["d"]:
                                     moves.append(payload["d"])
