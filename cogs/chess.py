@@ -15,7 +15,7 @@ from datetime import datetime
 TIMEOUT = 60
 TIMEOUT_CHECK_INTERVAL = 3
 DRAW_THROTTLE = 1
-BASE_BOARD_STATE = {"fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR", "uci": None}
+BASE_BOARD_STATE = {"fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR", "uci": None, "clock": {}}
 BOARD_SIZE = 120
 GAME_TIME = 240
 INCREMENT_TIME = 0
@@ -213,7 +213,7 @@ class Chess(commands.Cog):
                 em.set_footer(text="Powered by lichess.org")
                 em.add_field(
                     name="Players",
-                    value=f":white_large_square: {self.sessions[game][0].mention} ({d['clock']['white']}s)\n:black_large_square: {self.sessions[game][1].mention} ({d['clock']['black']}s)",
+                    value=f":white_large_square: {self.sessions[game][0].mention} ({d['clock'].get('white', '-')}s)\n:black_large_square: {self.sessions[game][1].mention} ({d['clock'].get('black', '-')}s)",
                 )
                 if not msg:
                     msg = await ctx.send(content=None, embed=em)
