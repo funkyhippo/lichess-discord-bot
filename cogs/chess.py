@@ -90,6 +90,8 @@ class Chess(commands.Cog):
                         opponent_url = data["urlWhite"]
                         author_url = data["urlBlack"]
 
+                    logging.info(f"White: {self.sessions[game][0]}, Black: {self.sessions[game][1]}")
+
                     try:
                         await ctx.author.send(
                             f"Your unique URL is in the next message, and will be deleted in {TIMEOUT} seconds."
