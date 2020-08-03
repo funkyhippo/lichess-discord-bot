@@ -15,7 +15,11 @@ from datetime import datetime
 TIMEOUT = 60
 TIMEOUT_CHECK_INTERVAL = 3
 DRAW_THROTTLE = 1
-BASE_BOARD_STATE = {"fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR", "uci": None, "clock": {}}
+BASE_BOARD_STATE = {
+    "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR",
+    "uci": None,
+    "clock": {},
+}
 BOARD_SIZE = 120
 GAME_TIME = 240
 INCREMENT_TIME = 0
@@ -43,7 +47,13 @@ class Chess(commands.Cog):
 
     @commands.max_concurrency(4)
     @commands.command()
-    async def chess(self, ctx, opponent: discord.Member, match_duration: int = GAME_TIME, increment: int = INCREMENT_TIME):
+    async def chess(
+        self,
+        ctx,
+        opponent: discord.Member,
+        match_duration: int = GAME_TIME,
+        increment: int = INCREMENT_TIME,
+    ):
         """Initiate a new lichess game with an opponent. The initiator will always be white."""
         if ctx.author == opponent:
             return await ctx.send("You can't play with yourself.")
@@ -56,8 +66,10 @@ class Chess(commands.Cog):
             return await ctx.send("The opponent is already playing a game!")
         if match_duration % 60:
             return await ctx.send("Duration must be a multiple of 60s.")
+        # Change this validation to allow for 30s, 45s, 1:30, etc
 
         game = None
+        success = True
 
         async with aiohttp.ClientSession() as s:
             form = aiohttp.FormData()
@@ -78,17 +90,34 @@ class Chess(commands.Cog):
                         opponent_url = data["urlWhite"]
                         author_url = data["urlBlack"]
 
-                    await ctx.author.send(
-                        f"Your unique URL is in the next message, and will be deleted in {TIMEOUT} seconds."
-                    )
-                    await ctx.author.send(author_url, delete_after=TIMEOUT)
-                    await opponent.send(
-                        f"{ctx.message.jump_url}\nYou've been invited to play Chess! Your unique URL is in the next message, and will be deleted in {TIMEOUT} seconds."
-                    )
-                    await opponent.send(opponent_url, delete_after=TIMEOUT)
-                    await ctx.send(
-                        f"Confirming game with opponents, please wait. This invite will time out in {TIMEOUT} seconds."
-                    )
+                    try:
+                        await ctx.author.send(
+                            f"Your unique URL is in the next message, and will be deleted in {TIMEOUT} seconds."
+                        )
+                        await ctx.author.send(author_url, delete_after=TIMEOUT)
+                    except discord.Forbidden:
+                        logging.warning("Initiator's DMs are forbidden.")
+                        success = False
+
+                    try:
+                        await opponent.send(
+                            f"You've been invited to play Chess! Your unique URL is in the next message, and will be deleted in {TIMEOUT} seconds."
+                        )
+                        await opponent.send(opponent_url, delete_after=TIMEOUT)
+                    except discord.Forbidden:
+                        logging.warning("Opponent's DMs are forbidden.")
+                        success = False
+
+                    if success:
+                        await ctx.send(
+                            f"Confirming game with opponents, please wait. This invite will time out in {TIMEOUT} seconds.",
+                            delete_after=TIMEOUT,
+                        )
+                    else:
+                        await ctx.send(
+                            "One or more of the opponent's DMs are closed; you must allow DMs from me to start a game.",
+                            delete_after=TIMEOUT,
+                        )
                 else:
                     logging.warning(f"Failed to create, status: {res.status}")
                     return await ctx.send("Failed to create.")
@@ -135,8 +164,12 @@ class Chess(commands.Cog):
                         if ms == "0":
                             signal += 1
                             if signal >= HEARTBEAT_FAIL_COUNT:
-                                await ctx.send(f"`{game}`: cancelled due to inactivity.")
-                                raise RuntimeError("Heartbeat didn't receive any actions for too long.")
+                                await ctx.send(
+                                    f"`{game}`: cancelled due to inactivity."
+                                )
+                                raise RuntimeError(
+                                    "Heartbeat didn't receive any actions for too long."
+                                )
                         else:
                             signal = 0
                             payload = json.loads(ms)
@@ -164,7 +197,9 @@ class Chess(commands.Cog):
                                     logging.warn(f"Data is malformed: {payload}")
                             if status:
                                 await ctx.send(f"`{game}`: {status}")
-                                raise RuntimeWarning("I could probably do better but this is an exit.")
+                                raise RuntimeWarning(
+                                    "I could probably do better but this is an exit."
+                                )
                 except Exception:
                     while len(moves):
                         await asyncio.sleep(0)  # Finish the rest of the turns
