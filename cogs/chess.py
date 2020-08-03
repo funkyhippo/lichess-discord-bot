@@ -122,8 +122,9 @@ class Chess(commands.Cog):
                     logging.warning(f"Failed to create, status: {res.status}")
                     return await ctx.send("Failed to create.")
 
-        logging.info(f"Created a new lichess game with ID: {game}")
-        await self.wait_for_start(ctx, game)
+        if success:
+            logging.info(f"Created a new lichess game with ID: {game}")
+            await self.wait_for_start(ctx, game)
         logging.info(f"Cleaning up game: {game}")
         del self.sessions[game]
 
