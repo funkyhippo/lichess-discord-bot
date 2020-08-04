@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+import traceback
 import logging
 import os
 import random
@@ -219,6 +220,7 @@ class Chess(commands.Cog):
                     await ws.close()
                     raise
         except Exception as err:
+            logging.warn(traceback.print_exc())
             logging.warn(err)
 
     async def ping(self, ws):
