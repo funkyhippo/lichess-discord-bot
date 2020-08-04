@@ -98,7 +98,7 @@ class Chess(commands.Cog):
                             f"Your unique URL is in the next message, and will be deleted in {TIMEOUT} seconds."
                         )
                         await ctx.author.send(author_url, delete_after=TIMEOUT)
-                    except discord.Forbidden:
+                    except (discord.Forbidden, discord.HTTPException):
                         logging.warning("Initiator's DMs are forbidden.")
                         success = False
 
@@ -107,7 +107,7 @@ class Chess(commands.Cog):
                             f"You've been invited to play Chess! Your unique URL is in the next message, and will be deleted in {TIMEOUT} seconds."
                         )
                         await opponent.send(opponent_url, delete_after=TIMEOUT)
-                    except discord.Forbidden:
+                    except (discord.Forbidden, discord.HTTPException):
                         logging.warning("Opponent's DMs are forbidden.")
                         success = False
 
@@ -247,7 +247,7 @@ class Chess(commands.Cog):
                 logging.info(f"Refreshing board: {d}")
                 em = discord.Embed(
                     title=f"ID: {game}",
-                    description=f"{color}'s turn!\n{self.draw_board(d)}\n[watch on lichess.org](https://lichess.org/{game})",
+                    description=f"{color}'s turn!\n{self.draw_board(d['fen'])}\n[watch on lichess.org](https://lichess.org/{game})",
                     timestamp=datetime.now(),
                 )
                 url = f"https://backscattering.de/web-boardimage/board.png?fen={d['fen']}&size={BOARD_SIZE}"
