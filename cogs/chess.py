@@ -272,8 +272,7 @@ class Chess(commands.Cog):
             logging.info("Draw task received cancellation.")
             raise
 
-    @staticmethod
-    def draw_board(move):
+    def draw_board(self, move):
         b = str(chess.Board(move))
         white = True
         board = []
@@ -282,16 +281,19 @@ class Chess(commands.Cog):
             for c in r:
                 if c != " ":
                     if c.islower():
-                        curr.append(f":b{c.lower()}{'w' if white else ''}:")
+                        emoji = f"b{c.lower()}{'w' if white else ''}"
+                        curr.append(discord.utils.get(self.bot.emojis, name=emoji))
                         white = not white
                     elif c.isupper():
-                        curr.append(f":w{c.lower()}{'w' if white else ''}:")
+                        emoji = f"w{c.lower()}{'w' if white else ''}"
+                        curr.append(discord.utils.get(self.bot.emojis, name=emoji))
                         white = not white
                     elif c == ".":
-                        curr.append(f":{'w_' if white else 'b_'}:")
+                        emoji = f"{'w_' if white else 'b_'}"
+                        curr.append(discord.utils.get(self.bot.emojis, name=emoji))
                         white = not white
-                # else:
-                #     curr.append(c) # With space
+                else:
+                    curr.append(c) # With space
             white = not white
             board.append("".join(curr))
 
