@@ -283,15 +283,15 @@ class Chess(commands.Cog):
                     if c != " ":
                         if c.islower():
                             emoji = f"b{c.lower()}{'w' if white else ''}"
-                            curr.append(discord.utils.get(self.bot.emojis, name=emoji))
+                            curr.append(str(discord.utils.get(self.bot.emojis, name=emoji)))
                             white = not white
                         elif c.isupper():
                             emoji = f"w{c.lower()}{'w' if white else ''}"
-                            curr.append(discord.utils.get(self.bot.emojis, name=emoji))
+                            curr.append(str(discord.utils.get(self.bot.emojis, name=emoji)))
                             white = not white
                         elif c == ".":
                             emoji = f"{'w_' if white else 'b_'}"
-                            curr.append(discord.utils.get(self.bot.emojis, name=emoji))
+                            curr.append(str(discord.utils.get(self.bot.emojis, name=emoji)))
                             white = not white
                     else:
                         curr.append(c) # With space
