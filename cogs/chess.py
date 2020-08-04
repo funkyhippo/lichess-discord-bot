@@ -273,31 +273,34 @@ class Chess(commands.Cog):
             raise
 
     def draw_board(self, move):
-        b = str(chess.Board(move))
-        white = True
-        board = []
-        for r in b.splitlines():
-            curr = []
-            for c in r:
-                if c != " ":
-                    if c.islower():
-                        emoji = f"b{c.lower()}{'w' if white else ''}"
-                        curr.append(discord.utils.get(self.bot.emojis, name=emoji))
-                        white = not white
-                    elif c.isupper():
-                        emoji = f"w{c.lower()}{'w' if white else ''}"
-                        curr.append(discord.utils.get(self.bot.emojis, name=emoji))
-                        white = not white
-                    elif c == ".":
-                        emoji = f"{'w_' if white else 'b_'}"
-                        curr.append(discord.utils.get(self.bot.emojis, name=emoji))
-                        white = not white
-                else:
-                    curr.append(c) # With space
-            white = not white
-            board.append("".join(curr))
+        try:
+            b = str(chess.Board(move))
+            white = True
+            board = []
+            for r in b.splitlines():
+                curr = []
+                for c in r:
+                    if c != " ":
+                        if c.islower():
+                            emoji = f"b{c.lower()}{'w' if white else ''}"
+                            curr.append(discord.utils.get(self.bot.emojis, name=emoji))
+                            white = not white
+                        elif c.isupper():
+                            emoji = f"w{c.lower()}{'w' if white else ''}"
+                            curr.append(discord.utils.get(self.bot.emojis, name=emoji))
+                            white = not white
+                        elif c == ".":
+                            emoji = f"{'w_' if white else 'b_'}"
+                            curr.append(discord.utils.get(self.bot.emojis, name=emoji))
+                            white = not white
+                    else:
+                        curr.append(c) # With space
+                white = not white
+                board.append("".join(curr))
 
-        return "\n".join(board)
+            return "\n".join(board)
+        except:
+            logging.warning(traceback.print_exc())
 
 
 def setup(bot):
