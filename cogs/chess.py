@@ -245,10 +245,9 @@ class Chess(commands.Cog):
             while await sem.acquire():
                 d = moves.pop(0)
                 logging.info(f"Refreshing board: {d}")
-                board = chess.Board(d["fen"])
                 em = discord.Embed(
                     title=f"ID: {game}",
-                    description=f"{color}'s turn!```{str(board)}```\n[watch on lichess.org](https://lichess.org/{game})",
+                    description=f"{color}'s turn!\n{self.draw_board(d)}\n[watch on lichess.org](https://lichess.org/{game})",
                     timestamp=datetime.now(),
                 )
                 url = f"https://backscattering.de/web-boardimage/board.png?fen={d['fen']}&size={BOARD_SIZE}"
@@ -272,6 +271,31 @@ class Chess(commands.Cog):
         except asyncio.CancelledError:
             logging.info("Draw task received cancellation.")
             raise
+
+    @staticmethod
+    def draw_board(move):
+        b = str(chess.Board(move))
+        white = True
+        board = []
+        for r in b.splitlines():
+            curr = []
+            for c in r:
+                if c != " ":
+                    if c.islower():
+                        curr.append(f":b{c.lower()}{'w' if white else ''}:")
+                        white = not white
+                    elif c.isupper():
+                        curr.append(f":w{c.lower()}{'w' if white else ''}:")
+                        white = not white
+                    elif c == ".":
+                        curr.append(f":{'w_' if white else 'b_'}:")
+                        white = not white
+                # else:
+                #     curr.append(c) # With space
+            white = not white
+            board.append("".join(curr))
+
+        return "\n".join(board)
 
 
 def setup(bot):
