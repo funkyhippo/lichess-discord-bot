@@ -250,10 +250,10 @@ class Chess(commands.Cog):
                     description=f"{color}'s turn!\n{self.draw_board(d['fen'])}\n[watch on lichess.org](https://lichess.org/{game})",
                     timestamp=datetime.now(),
                 )
-                url = f"https://backscattering.de/web-boardimage/board.png?fen={d['fen']}&size={BOARD_SIZE}"
-                if d["uci"]:
-                    url += f"&lastMove={d['uci']}"
-                em.set_thumbnail(url=url)
+                # url = f"https://backscattering.de/web-boardimage/board.png?fen={d['fen']}&size={BOARD_SIZE}"
+                # if d["uci"]:
+                #     url += f"&lastMove={d['uci']}"
+                # em.set_thumbnail(url=url)
                 em.set_footer(text="Powered by lichess.org")
                 em.add_field(
                     name="Players",
@@ -293,8 +293,8 @@ class Chess(commands.Cog):
                             emoji = f"{'w_' if white else 'b_'}"
                             curr.append(str(discord.utils.get(self.bot.emojis, name=emoji)))
                             white = not white
-                    else:
-                        curr.append(c) # With space
+                    # else:
+                    #     curr.append(c) # With space
                 white = not white
                 board.append("".join(curr))
 
