@@ -192,7 +192,7 @@ class Chess(commands.Cog):
                             #     ):
                             #         status = "Both players disconnected."
                             else:
-                                if "fen" in payload.get("d", {}):
+                                if "d" in payload and payload["d"] and "fen" in payload["d"]:
                                     moves.append(payload["d"])
                                     logging.info(f"Pushed move: {payload['d']}")
                                     logging.info(f"Moves available: {len(moves)}")
